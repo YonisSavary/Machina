@@ -20,7 +20,12 @@ class Set implements CommandInterface
        ."Simply call 'set <key> <value>' to do so"
        ."\n\n"
        ."Ex: \n"
-       ."> set separator ,       - Set the CSV separator to ','";
+       ."> set separator ,       - Set the CSV separator to ','\n"
+       ."\n\n"
+       ."You can also reuse variables when typing command !\n"
+       ."> set com mysql-connect   | Set 'com' to 'mysql-connect'\n"
+       ."> help @com               | Display help for 'mysql-connect' command\n"
+       ."** The variable is replaced only if defined **";
     }
 
     public static function execute(...$args)
@@ -206,6 +211,41 @@ class Help implements CommandInterface
             echo "\n".$class::getDescription();
             echo "\n";
             echo "\n".$class::getHelp();
+        }
+    }
+}
+
+
+
+
+
+class SourceFile implements CommandInterface
+{
+    public static function getName(): string           { return "source"; }
+    public static function getDescription(): string    { return "Execute commands inside a file"; }
+    public static function getHelp(): string           { return
+        "Execute every commands inside a file, you may specify a command separator"."\n"
+        ."\n"
+        ."Ex:"."\n"
+        ."> source myScript.mc       | Use \\n as command separator"."\n"
+        ."> source myScript.mc ;     | Use ';' as command separator"."\n"
+    ; }
+
+    public static function execute(...$args)
+    {
+        if (!count($args)) throw new Exception("[source] source command need a filename !");
+        $filename = $args[0];
+        if (!file_exists($filename)) throw new Exception("[source] '$filename' file does not exists !");
+
+        $script = file_get_contents($filename);
+        $commands = explode($args[1]??"\n", $script);
+
+        foreach ($commands as $com)
+        {
+            echo "> $com\n";
+            $start = hrtime(true);
+            Machina::execute($com);
+            echo "\nFinished ! Execution time : ". ((hrtime(true) - $start)/1000000). "ms\n\n";
         }
     }
 }

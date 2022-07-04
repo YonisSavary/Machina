@@ -18,9 +18,21 @@ class Machina
     static $continue = true;
     static $commands = [];
 
+    public static function displayHelp()
+    {
+        echo 
+            "\n--- Machina - Data Processing Tool for PHP ---\n".
+            "\n".
+            "Usage :\n".
+            "php machina.php                                | Display the original prompt, with which you can type commands\n".
+            "php machina.php --command=\"cd myDirectory\"   | Directly execute a command\n".
+            "php machina.php --script=\"myScript.txt\"      | Equivalent to 'source myScript.txt'\n".
+            "\n";
+    }
+
     public static function execute(string $command)
     {
-        $regex = "/(\".+?\"|\'.+?\'|.+?)( |$)/";
+        $regex = "/(\"(.|\n)+?\"|\'(.|\n)+?\'|(.|\n)+?)( |$)/";
         $matches = [];
         preg_match_all($regex, $command, $matches);
 
@@ -35,6 +47,16 @@ class Machina
                 (str_starts_with($value, "'") && str_ends_with($value, "'"))
             ||  (str_starts_with($value, "\"") && str_ends_with($value, "\""))
             ) $value = substr($value, 1, strlen($value)-2);
+            
+            $matches = [];
+            if (preg_match("/@(.+?)( |$)/", $value, $matches))
+            {
+                $key = $matches[1];
+                if (isset(Machina::$config[$key])) 
+                {
+                    $value = str_replace("@".$key, Machina::$config[$key], $value);
+                }
+            }
         }
 
         if (key_exists($command, self::$commands))
@@ -80,7 +102,10 @@ class Machina
         require_once "Machina/Loader.php";
         Loader::loadFiles();
         self::registerCommands();
+    }
 
+    public static function startPrompt()
+    {
         echo "\n--- Machina - Data Processing Tool for PHP ---";
         echo "\nType 'help' for more";
         while (self::$continue) self::prompt();
